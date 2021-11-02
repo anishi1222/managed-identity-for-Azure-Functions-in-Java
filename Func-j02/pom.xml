@@ -32,16 +32,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20210307</version>
-        </dependency>
-        <dependency>
-            <groupId>com.auth0</groupId>
-            <artifactId>java-jwt</artifactId>
-            <version>3.18.2</version>
-        </dependency>
-        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>4.0.0</version>
@@ -71,7 +61,7 @@
                     <!-- function app resource group -->
                     <resourceGroup>Func_Java</resourceGroup>
                     <!-- function app service plan name -->
-                    <appServicePlanName>ASP-FuncJava-8a43</appServicePlanName>
+                    <appServicePlanName>ASP-FuncJava</appServicePlanName>
                     <!-- function app region-->
                     <!-- refers https://github.com/microsoft/azure-maven-plugins/wiki/Azure-Functions:-Configuration-Details#supported-regions for all valid values -->
                     <region>westus2</region>
