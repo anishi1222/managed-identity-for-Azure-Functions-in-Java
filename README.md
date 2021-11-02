@@ -1,4 +1,4 @@
-# managed-identity-for-Azure-Functions-in-Java
+# Managed identity for Azure Functions (Java)
 
 Sample Java codes to authenticate and authorize managed identity of Azure functions.
 
