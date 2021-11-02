@@ -5,7 +5,7 @@ Sample Java codes to authenticate and authorize managed identity of Azure functi
 ## func-j01
 
 - Caller application (HTTP trigger) to call func-j02.
-- audienceId (application Id for func-j02) and targetUrl (API endpoint for func-j02) is specified.
+- audienceId (application Id for func-j02) and targetUrl (API endpoint for func-j02) should be specified.
 
 ## func-j02
 
