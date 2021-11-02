@@ -66,7 +66,7 @@
                     <!-- function app resource group -->
                     <resourceGroup>Func_Java</resourceGroup>
                     <!-- function app service plan name -->
-                    <appServicePlanName>ASP-FuncJava-8822</appServicePlanName>
+                    <appServicePlanName>ASP-FuncJava</appServicePlanName>
                     <!-- function app region-->
                     <!-- refers https://github.com/microsoft/azure-maven-plugins/wiki/Azure-Functions:-Configuration-Details#supported-regions for all valid values -->
                     <region>westus2</region>
