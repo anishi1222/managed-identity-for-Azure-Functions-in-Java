@@ -13,13 +13,18 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class HttpTriggerFunction {
 
-    static final String audienceID = "";
-    static final String targetUrl = "";
+    static final Map<String, TargetInfo> targetInfo = new ConcurrentHashMap<String, TargetInfo>();
+
+    public HttpTriggerFunction() {
+        targetInfo.put("c02", new TargetInfo("https://func-cs02.azurewebsites.net/api/auth-cs", "appId for func-cs02"));
+        targetInfo.put("j02", new TargetInfo("https://func-j02.azurewebsites.net/api/auth-java", "appId for func-j02"));
+    }
 
     @FunctionName("call-from-java")
     public HttpResponseMessage run(
@@ -36,49 +41,38 @@ public class HttpTriggerFunction {
         if (Optional.ofNullable(funcType).isEmpty()) {
             return request.createResponseBuilder(HttpStatus.BAD_REQUEST).body("Please pass a type on the query string or in the request body[1]").build();
         }
-        if (funcType.length() < 1) {
-            return request.createResponseBuilder(HttpStatus.BAD_REQUEST).body("Please pass a type on the query string or in the request body[2]").build();
-        }
-
-        switch (funcType.toLowerCase())
-        {
-            case "c02":
-            case "j02":
-                break;
-            default:
-                return request.createResponseBuilder(HttpStatus.BAD_REQUEST).body("Your specified API type is out of scope[" + funcType + "].").build();
-        }
-
-        ResMsg responseMessage = new ResMsg();
-        try {
-            DefaultAzureCredential defaultAzureCredential = new DefaultAzureCredentialBuilder().build();
-            TokenRequestContext tokenRequestContext = new TokenRequestContext().addScopes("api://" + audienceID + "/.default");
-            String accessToken = defaultAzureCredential.getToken(tokenRequestContext).map(AccessToken::getToken).block();
-            HttpClient httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_2)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(Duration.ofSeconds(60))
-                .build();
-
-            HttpRequest httpRequest = HttpRequest.newBuilder(URI.create(targetUrl))
-                .setHeader("Authorization", "Bearer " + accessToken)
-                .GET()
-                .build();
-            HttpResponse<String> httpResponse = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-            responseMessage.setStatus(httpResponse.statusCode());
-            if(httpResponse.statusCode()!=200) {
-                responseMessage.setResponse("Unauthorized");
-            } else {
-                responseMessage.setResponse(httpResponse.body());
+        if (targetInfo.containsKey(funcType.toLowerCase())) {
+            ResMsg responseMessage = new ResMsg();
+            try {
+                DefaultAzureCredential defaultAzureCredential = new DefaultAzureCredentialBuilder().build();
+                TokenRequestContext tokenRequestContext = new TokenRequestContext().addScopes(String.format("api://%s/.default", targetInfo.get(funcType).audienceID()));
+                String accessToken = defaultAzureCredential.getToken(tokenRequestContext).map(AccessToken::getToken).block();
+                HttpClient httpClient = HttpClient.newBuilder()
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();
+                context.getLogger().info(String.format("token [%s]", accessToken));
+                HttpRequest httpRequest = HttpRequest.newBuilder(URI.create(targetInfo.get(funcType).targetUrl()))
+                    .setHeader("Authorization", "Bearer " + accessToken)
+                    .GET()
+                    .build();
+                HttpResponse<String> httpResponse = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+                responseMessage.setStatus(httpResponse.statusCode());
+                if (httpResponse.statusCode() != 200) {
+                    responseMessage.setResponse(String.format("responded status [%d]", httpResponse.statusCode()));
+                } else {
+                    responseMessage.setResponse(httpResponse.body());
+                }
+            } catch (Exception e) {
+                context.getLogger().severe(e.getLocalizedMessage());
+                e.printStackTrace();
+                responseMessage.setResponse(e.getLocalizedMessage());
+                responseMessage.setStatus(HttpStatus.SERVICE_UNAVAILABLE.value());
             }
-        }
-        catch (Exception e) {
-            context.getLogger().severe(e.getLocalizedMessage());
-            e.printStackTrace();
-            responseMessage.setResponse(e.getLocalizedMessage());
-            responseMessage.setStatus(HttpStatus.SERVICE_UNAVAILABLE.value());
+
+            return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(responseMessage).build();
+        } else {
+            return request.createResponseBuilder(HttpStatus.BAD_REQUEST).body("Your specified API type is out of scope[" + funcType + "].").build();
         }
 
-        return request.createResponseBuilder(HttpStatus.OK).header("Content-Type","application/json").body(responseMessage).build();
     }
 }
